@@ -10,6 +10,6 @@ Getting Started:
 
 5. Start the server using `symfony server:start`.
 
-6. Add your .xml file to the /import_command folder, or just use the provided feed.xml.
-
-7. Enter the command `php bin/console app:import feed.xml` (replace feed.xml with your filename) to execute the command.  
+6. (Optional) Add your own .xml-file to the directory.
+   
+7. Enter the command `php bin/console app:import feed.xml` (replace feed.xml if you are using a different .xml-file) to execute the command.  
