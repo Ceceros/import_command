@@ -12,4 +12,4 @@ Getting Started:
 
 6. Add your .xml file to the /import_command folder, or just use the provided feed.xml.
 
-7. Enter the command "php bin/console `app:import feed.xml` (replace feed.xml with your filename) to execute the command.  
+7. Enter the command `php bin/console app:import feed.xml` (replace feed.xml with your filename) to execute the command.  
