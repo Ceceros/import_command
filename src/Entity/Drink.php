@@ -5,10 +5,8 @@ namespace App\Entity;
 use App\Repository\DrinkRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: DrinkRepository::class)]
-//Make sure that IDs are unique
 class Drink
 {
     #[ORM\Id]
@@ -66,16 +64,34 @@ class Drink
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $Shortdesc = null;
 
+    public function __construct(int $id, string $CategoryName, string $Sku, string $Name, string $Description, float $Price, 
+    string $Link, string $Image, string $Brand, int $Rating, string $Caffeine, int $Count, string $Flavored, string $Seasonal, 
+    string $Instock, int $Facebook, int $IsKCup, string $Shortdesc)
+    {
+        $this->id= $id; 
+        $this->CategoryName= $CategoryName; 
+        $this->Sku= $Sku; 
+        $this->Name= $Name; 
+        $this->Description= $Description; 
+        $this->Price= $Price; 
+        $this->Link= $Link; 
+        $this->Image= $Image; 
+        $this->Brand= $Brand; 
+        $this->Rating= $Rating; 
+        $this->Caffeine= $Caffeine;
+        $this->Count= $Count; 
+        $this->Flavored= $Flavored; 
+        $this->Seasonal= $Seasonal; 
+        $this->Instock= $Instock; 
+        $this->Facebook= $Facebook; 
+        $this->IsKCup= $IsKCup; 
+        $this->Shortdesc= $Shortdesc; 
+ 
+    }
+
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function setId(int $id) : static
-    {
-        $this->id = $id;
-
-        return $this;
     }
 
     public function getCategoryName(): ?string
@@ -203,12 +219,6 @@ class Drink
         return $this->Count;
     }
 
-    public function setCount(int $Count): static
-    {
-        $this->Count = $Count;
-
-        return $this;
-    }
 
     public function getFlavored(): ?string
     {
@@ -258,7 +268,7 @@ class Drink
         return $this;
     }
 
-    public function isIsKCup(): ?int
+    public function getIsKCup(): ?int
     {
         return $this->IsKCup;
     }
