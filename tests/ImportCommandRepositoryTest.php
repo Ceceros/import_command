@@ -3,7 +3,6 @@
 namespace App\Tests\Repository;
 
 use App\Entity\Drink;
-use App\Service\DuplicateChecker;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -51,13 +50,6 @@ class ProductRepositoryTest extends KernelTestCase
             ->findOneBy(['id' => 342]);
 
         $this->assertSame(5, $drink2->getRating());
-
-        $check = new DuplicateChecker($this->log);
-        $this->assertEquals(
-            true,
-            $check->duplicateID(342,$this->entityManager)
-        );
-               
     }
 
     protected function tearDown(): void

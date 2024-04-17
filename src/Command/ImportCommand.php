@@ -1,17 +1,17 @@
 <?php
 namespace App\Command;
 
+use XMLReader;
 use App\Entity\Drink;
-use App\Service\DuplicateChecker;
-use App\Service\DrinkService;
+use SimpleXMLElement;
+use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use SebastianBergmann\RecursionContext\Exception;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use SimpleXMLElement;
-use XMLReader;
 
 #[AsCommand(
     name: 'app:import',
@@ -21,17 +21,15 @@ use XMLReader;
 class ImportCommand extends Command{
 
     private EntityManagerInterface $entityManager;
-    private DuplicateChecker $duplicateChecker;
-    private DrinkService $drinkService;
+    private LoggerInterface $logger;
     //Declares how many rows of data will be added to the table at once
     public int $batchSize;
     //Used to count the number of rows added. This is needed for the batched upload of data, but can also be used for other purposes like counting the number of rows uploaded
     public int $count;
 
-    public function __construct(EntityManagerInterface $entityManager, DuplicateChecker $duplicateChecker, DrinkService $drinkService) {
+    public function __construct(EntityManagerInterface $entityManager, LoggerInterface $logger){
         parent::__construct();
-        $this->drinkService = $drinkService;
-        $this->duplicateChecker = $duplicateChecker;
+        $this->logger=$logger;
         $this->entityManager = $entityManager;
         $this->batchSize=100;
         $this->count=0;
@@ -68,7 +66,12 @@ class ImportCommand extends Command{
 
     //Transfer data from an xml into a doctrine entity before adding it to the database.
     //By using doctrine, we can change the database in .env without having to adapt the code.
+
+    
+
     public function importXml(String $data) : void {
+
+        $repository= $this->entityManager->getRepository(Drink::class);
         
         //Use XMLReader to read the .xml file
         $xml = new XMLReader();
@@ -79,19 +82,49 @@ class ImportCommand extends Command{
         
         while($xml->name == 'item') {
             $row=new SimpleXMLElement($xml->readOuterXml());
+            $id=(int)$row->entity_id;
             //If the ID already exists in the database, it is skipped
-            if ($this->duplicateChecker->duplicateID((int)$row->entity_id,$this->entityManager)){
+            if($repository->find($id)){
+                $this->logger->warning('There is already a row in the database with the id ' . $id);
                 //Move pointer to the next item and continue with the while loop
                 $xml->next('item');
 	            unset($row);
                 continue;
             } 
-            $drink = $this->drinkService->xmlToDrink($row);
-            //Save the current entity in our local storage
-            $this->entityManager->persist($drink);
-            $this->count++;
+            //Create a new Drink entity and insert our data into it
+            try {
+                $drink = new Drink();
+                $drink->setId($id);
+                $drink->setCategoryName($row->CategoryName);
+                $drink->setSku($row->sku);
+                $drink->setName($row->name);
+                $drink->setDescription($row->description);
+                $drink->setShortdesc($row->shortdesc);
+                $drink->setPrice((float)$row->price);
+                $drink->setLink($row->link);
+                $drink->setImage($row->image);
+                $drink->setBrand($row->Brand);
+                $drink->setRating((int)$row->Rating);
+                $drink->setCaffeine($row->CaffeineType);
+                $drink->setCount((int)$row->Count);
+                $drink->setFlavored($row->Flavored);
+                $drink->setSeasonal($row->Seasonal);
+                $drink->setInstock($row->Instock);
+                $drink->setFacebook((int)$row->Facebook);
+                $drink->setIsKCup((int)$row->IsKCup);
+                //Save the current entity in our local storage
+                $this->entityManager->persist($drink);
+                $this->count++;
+            } catch(Exception $e){
+                $this->logger->error('Failed to input row with the id ' . $id . $e);
+                continue;
+            }
             //Seperate function to add our drink to the DB
-            $this->addBatchToDb();
+            if ($this->count % $this->batchSize == 0)
+            {
+                $this->entityManager->flush();
+                $this->entityManager->clear();
+            }
             //Move to the next item
             $xml->next('item');
 	        unset($row);
@@ -100,15 +133,7 @@ class ImportCommand extends Command{
         $this->entityManager->flush();  
     }
 
-    //Checks if there is already data with that ID in the databse. Will log the relevant ID
-    
-
-    //Uses modulo operator to add our data to the datavase after batchSize rows of data were added
-    public function addBatchToDb(){
-        if ($this->count % $this->batchSize == 0)
-            {
-                $this->entityManager->flush();
-                $this->entityManager->clear();
-            }
+    public function rowDataIncorrect(SimpleXMLElement $row) : bool{
+        return !(is_numeric($row->entity_id) && is_numeric($row->Rating) && is_numeric($row->Count) && is_numeric($row->isKCup) && is_numeric($row->Facebook) && is_numeric($row->Price));
     }
 }
